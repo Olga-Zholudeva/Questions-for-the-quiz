@@ -2,6 +2,7 @@ from core.db import AsyncSessionLocal
 from models.models import QuestionsNum, Questions
 from schemas.schemas import QuestionsNumCreate
 from datetime import datetime
+from sqlalchemy import select
 
 
 async def create_question_num(
@@ -15,6 +16,7 @@ async def create_question_num(
         await session.commit()
         await session.refresh(db_question_num)
     return db_question_num
+
 
 async def create_question(
         new_question: str
@@ -30,4 +32,12 @@ async def create_question(
         await session.commit()
         await session.refresh(db_question)
     return db_question
+
+async def get_last(
+        model: Questions
+):
+    async with AsyncSessionLocal() as session:
+        query = select(model).order_by(model.id.desc()).offset(1).limit(1)
+        questions = await session.execute(query)
+        return questions.scalars().first()
 
