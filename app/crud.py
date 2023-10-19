@@ -3,8 +3,8 @@ from datetime import datetime
 import httpx
 from sqlalchemy import exists, select
 
-from app.models import Questions
 from app.core.db import AsyncSessionLocal
+from app.models import Questions
 
 
 async def create_question(new_question: str) -> Questions:
