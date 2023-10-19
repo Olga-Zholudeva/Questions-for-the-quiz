@@ -1,26 +1,15 @@
 from core.db import AsyncSessionLocal
-from models.models import QuestionsNum, Questions
-from schemas.schemas import QuestionsNumCreate
+from models.models import Questions
 from datetime import datetime
 from sqlalchemy import select
-
-
-async def create_question_num(
-        new_question_num: QuestionsNumCreate
-) -> QuestionsNum:
-    
-    new_question_num_data = new_question_num.dict()
-    db_question_num = QuestionsNum(**new_question_num_data)
-    async with AsyncSessionLocal() as session:
-        session.add(db_question_num)
-        await session.commit()
-        await session.refresh(db_question_num)
-    return db_question_num
+import httpx
+from sqlalchemy import exists, select
 
 
 async def create_question(
         new_question: str
 ) -> Questions:
+    """Создание записи в БД"""
     db_question = Questions(
         question_id=new_question['id'],
         question=new_question['question'],
@@ -33,11 +22,33 @@ async def create_question(
         await session.refresh(db_question)
     return db_question
 
+async def get_questions(
+        link: str,
+        count: int
+) -> int:
+    """Получение вопросов с публичного API."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(link, params={'count': count})
+    question_data = response.json()
+    counter = 0
+    for question in question_data:
+        async with AsyncSessionLocal() as session:
+            exists_result = await session.execute(
+                select(exists().where(Questions.question_id == question['id']))
+            )
+            if exists_result.scalar():
+                counter += 1
+            else:
+                await create_question(question)
+    return counter
+
 async def get_last(
         model: Questions
-):
+) -> Questions:
+    """Получение предпоследней записи из БД."""
     async with AsyncSessionLocal() as session:
-        query = select(model).order_by(model.id.desc()).offset(1).limit(1)
-        questions = await session.execute(query)
+        questions = await session.execute(
+            select(model).order_by(model.id.desc()).offset(1).limit(1)
+        )
         return questions.scalars().first()
 
