@@ -17,7 +17,6 @@
 - FastAPI 0.103.2
 - Uvicorn 0.23.2
 - SqlAalchemy 2.0.22
-- Asyncpg 0.28.0
 - Pydantic 2.4.2
 - Alembic 1.12.0
 
